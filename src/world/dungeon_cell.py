@@ -1,9 +1,3 @@
-from entities.chest import Chest
-from entities.monster import Monster
-from entities.npc import NPC
-from systems.events import StartBattleEvent, StartDialogEvent, StartOpenChestEvent
-
-
 class DungeonCell:
     """
     Одна клетка подземелья.
@@ -18,24 +12,26 @@ class DungeonCell:
         self.x = x
         self.y = y
         self.content = None  # Entity | None
+        self.type = "void"  # "void" | "floor" | "exit" | "start"
 
     def enter(self, party):
         if self.content:
             self.content.on_enter(party)
 
+    def set_type(self, cell_type):
+        self.type = cell_type
 
-    # def enter(self, party):
-    #     if isinstance(self.content, Monster):
-    #         self.event_manager.emit(
-    #             StartBattleEvent([self.content])
-    #         )
+    def set_content(self, content):
+        self.content = content
 
-    #     if isinstance(self.content, NPC):
-    #         event_manager.emit(
-    #             StartDialogEvent([self.content])
-    #         )
+    def is_void(self):
+        return self.type == "void"
 
-    #     if isinstance(self.content, Chest):
-    #         event_manager.emit(
-    #             StartOpenChestEvent([self.content])
-    #         )
+    def is_floor(self):
+        return self.type == "floor"
+
+    def is_exit(self):
+        return self.type == "exit"
+    
+    def is_start(self):
+        return self.type == "start"

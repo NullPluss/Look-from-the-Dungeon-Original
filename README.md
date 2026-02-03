@@ -10,12 +10,15 @@ Look from the Dungeoon Origin/src
     │   ├── scene.py
     │   ├── event_manager.py
     │   ├── config.py
+    │   ├── window.py
+    │   ├── audio.py
     │
     ├── world/
     │   ├── __init__.py
     │   ├── dungeon.py
     │   ├── dungeon_cell.py
     │   ├── dungeon_generator_adapter.py
+    │   ├── dungeon_generator.py
     │
     ├── entities/
     │   ├── __init__.py
@@ -25,6 +28,7 @@ Look from the Dungeoon Origin/src
     │   ├── npc.py
     │   ├── monster.py
     │   ├── mimic.py
+    │   ├── factories.py
     │
     ├── systems/
     │   ├── __init__.py
@@ -32,14 +36,22 @@ Look from the Dungeoon Origin/src
     │   ├── inventory_system.py
     │   ├── quest_system.py
     │   ├── loot_system.py
+    │   ├── events.py
+    │   ├── triggers.py
     │
     ├── ui/
+    │   ├── widgets/
+    |   │   ├── button.py
+    |   │   ├── panel.py
+    |   │   ├── slot.py
     │   ├── __init__.py
+    │   ├── base_ui.py
     │   ├── ui_manager.py
     │   ├── inventory_ui.py
     │   ├── map_ui.py
     │   ├── dialog_ui.py
     │   ├── battle_ui.py
+    │   ├── camera_ui.py
     │
     ├── items/
     │   ├── __init__.py
@@ -50,12 +62,19 @@ Look from the Dungeoon Origin/src
     │   ├── quest_item.py
     │
     ├── assets/
-    │   ├── sprites/
     │   ├── sounds/
-    │   └── fonts/
+    │   └── chests/
+    │   └── monsters/
+    │   └── npc/
+    │   └── player_character/
+    │   └── cells/
     │
     └── utils/
         ├── __init__.py
         ├── math.py
         ├── timer.py
-        └── constants.py
+        ├── constants.py
+        ├── debug.py
+        ├── loader.py
+        ├── layout.py
+        └── probability.py

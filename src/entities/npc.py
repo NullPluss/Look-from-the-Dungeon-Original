@@ -1,6 +1,6 @@
-from entities.character import Character
+from entities.entity import Entity
 
-class NPC(Character):
+class NPC(Entity):
     """
     NPC.
     Имеет:

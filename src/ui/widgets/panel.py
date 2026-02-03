@@ -1,10 +1,10 @@
-class Panel:
-    """
-    UI контейнер.
-    """
+import pygame
+from ui.base_ui import BaseUI
 
-    def __init__(self, rect):
-        self.rect = rect
+class Panel(BaseUI):
+    def __init__(self, rect, color=(30,30,30)):
+        super().__init__(rect)
+        self.color = color
 
     def render(self, screen):
-        pass
+        pygame.draw.rect(screen, self.color, self.rect)

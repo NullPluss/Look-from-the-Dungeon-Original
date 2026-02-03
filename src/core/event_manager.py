@@ -1,22 +1,29 @@
-class EventManager:
-    """
-    Централизованный менеджер игровых событий.
-    """
+import pygame
+from collections import defaultdict
 
+class EventManager:
     def __init__(self):
-        self.listeners = {}
+        self.listeners = defaultdict(list)
 
     def subscribe(self, event_type, callback):
-        """
-        Подписка на событие.
-        """
-        if event_type not in self.listeners:
-            self.listeners[event_type] = []
-        self.listeners[event_type].append(callback)
+        if callback not in self.listeners[event_type]:
+            self.listeners[event_type].append(callback)
 
-    def emit(self, event):
-        """
-        Отправка события всем подписчикам.
-        """
-        for callback in self.listeners.get(type(event), []):
-            callback(event)
+    def unsubscribe(self, event_type, callback):
+        if callback in self.listeners[event_type]:
+            self.listeners[event_type].remove(callback)
+
+    def emit(self, event_type, **data):
+        for callback in self.listeners[event_type]:
+            callback(**data)
+
+    def process_pygame_events(self):
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.emit("QUIT")
+            elif event.type == pygame.KEYDOWN:
+                self.emit("KEYDOWN", key=event.key)
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                self.emit("MOUSE_DOWN", pos=event.pos, button=event.button)
+            elif event.type == pygame.MOUSEBUTTONUP:
+                self.emit("MOUSE_UP", pos=event.pos, button=event.button)

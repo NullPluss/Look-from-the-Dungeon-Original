@@ -1,13 +1,10 @@
+import pygame
+
 class BaseUI:
-    """
-    Базовый класс всех UI экранов.
-    """
+    def __init__(self, rect):
+        self.rect = pygame.Rect(rect)
+        self.visible = True
 
-    def handle_event(self, event):
-        pass
-
-    def update(self, dt):
-        pass
-
-    def render(self, screen):
-        pass
+    def update(self, dt): pass
+    def render(self, screen): pass
+    def handle_event(self, event): pass

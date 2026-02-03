@@ -25,10 +25,6 @@ class QuestCompletedEvent(GameEvent):
     def __init__(self, quest):
         self.quest = quest
 
-class StartDialogEvent(GameEvent):
-    def __init__(self, npcs):
-        self.npcs = npcs
-
 class StartOpenChestEvent(GameEvent):
     def __init__(self, chests):
         self.chests = chests

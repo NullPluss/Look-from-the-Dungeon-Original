@@ -23,6 +23,12 @@ class DungeonGenerator:
         self._place_exits()
         self._ensure_connectivity()
 
+        for y in range(self.height):
+            for x in range(self.width):
+                if self.grid[y][x] == LayoutCell.FLOOR:
+                    self.grid[y][x] = LayoutCell.START
+                    return self.grid
+
         return self.grid
 
     # ---------- ROOMS ----------

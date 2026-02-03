@@ -1,7 +1,4 @@
 import random
-from entities.chest import Chest
-from entities.factories import MonsterFactory
-from entities.factories import NPCFactory
 from world.dungeon_cell import DungeonCell
 from utils.layout import LayoutCell
 from utils.probability import weighted_choice, chance
@@ -15,10 +12,10 @@ class DungeonGeneratorAdapter:
     
     def __init__(self, generator: DungeonGenerator):
         self.generator = generator
-        self.grid = []
 
     def build(self):
         layout = self.generator.generate()
+        grid = []
 
         for y, row in enumerate(layout):
             dungeon_row = []
@@ -26,14 +23,19 @@ class DungeonGeneratorAdapter:
                 dungeon_cell = DungeonCell(x, y)
 
                 if cell == LayoutCell.FLOOR:
-                    dungeon_cell.content = self._spawn_content()
-                elif cell == LayoutCell.EXIT:
-                    dungeon_cell.content = "exit"
+                    dungeon_cell.set_type("floor")
+                    dungeon_cell.set_content(self._spawn_content())
+                if cell == LayoutCell.EXIT:
+                    dungeon_cell.set_type("exit")
+                if cell == LayoutCell.VOID:
+                    dungeon_cell.set_type("void")
+                if cell == LayoutCell.START:
+                    dungeon_cell.set_type("start")
 
                 dungeon_row.append(dungeon_cell)
-            self.grid.append(dungeon_row)
+            grid.append(dungeon_row)
 
-        return self.grid
+        return grid
 
     def _spawn_content(self):
         from utils.constants import CELL_SPAWN_WEIGHTS
@@ -43,9 +45,3 @@ class DungeonGeneratorAdapter:
             weights=list(CELL_SPAWN_WEIGHTS.values()),
             k=1
         )[0]
-
-    def __init__(self, generator):
-        self.generator = generator
-
-    def build_dungeon(self):
-        return self.generator.generate()

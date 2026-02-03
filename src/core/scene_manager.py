@@ -1,33 +1,26 @@
-import pygame
-
 class SceneManager:
-    """
-    Менеджер сцен.
-    Отвечает за:
-    - переключение между сценами (игра, бой, меню, карта, инвентарь)
-    """
-    
     def __init__(self):
-        self.current_scene = None
+        self.scenes = {}
+        self.active_scene = None
 
-    def change_scene(self, scene):
-        """
-        Полностью меняет активную сцену.
-        """
-        self.current_scene = scene
+    def register(self, name, scene):
+        self.scenes[name] = scene
 
-    def push(self, scene):
-        """
-        Сохраняет текущую сцену и переключается на новую.
-        """
-        # Здесь можно реализовать стек сцен, если нужно
-        self.current_scene = scene
-
-    def handle_event(self, event):
-        self.current_scene.handle_event(event)
+    def set_scene(self, name):
+        if self.active_scene:
+            self.active_scene.on_exit()
+        self.active_scene = self.scenes.get(name)
+        if self.active_scene:
+            self.active_scene.on_enter()
 
     def update(self, dt):
-        self.current_scene.update(dt)
+        if self.active_scene:
+            self.active_scene.update(dt)
 
     def render(self, screen):
-        self.current_scene.render(screen)
+        if self.active_scene:
+            self.active_scene.render(screen)
+
+    def handle_event(self, event):
+        if self.active_scene:
+            self.active_scene.handle_event(event)

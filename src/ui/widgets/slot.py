@@ -1,14 +1,15 @@
-class Slot:
-    """
-    Слот инвентаря.
-    """
+import pygame
+from ui.base_ui import BaseUI
 
-    def __init__(self, rect, item=None):
-        self.rect = rect
+class Slot(BaseUI):
+    def __init__(self, rect):
+        super().__init__(rect)
+        self.item = None
+
+    def set_item(self, item):
         self.item = item
 
-    def handle_event(self, event):
-        pass
-
     def render(self, screen):
-        pass
+        pygame.draw.rect(screen, (100,100,100), self.rect, 2)
+        if self.item and hasattr(self.item, 'icon'):
+            screen.blit(self.item.icon, self.rect.topleft)

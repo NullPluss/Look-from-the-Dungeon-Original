@@ -1,27 +1,25 @@
-from utils.constants import UI_BG, UI_PANEL
-
 class UIManager:
-    """
-    Управляет активным UI.
-    """
-
     def __init__(self):
-        self.active_ui = None
+        self.elements = []
 
-    def set_ui(self, ui):
-        self.active_ui = ui
+    def add(self, ui):
+        self.elements.append(ui)
 
-    def clear(self):
-        self.active_ui = None
-
-    def handle_event(self, event):
-        if self.active_ui:
-            self.active_ui.handle_event(event)
+    def remove(self, ui):
+        if ui in self.elements:
+            self.elements.remove(ui)
 
     def update(self, dt):
-        if self.active_ui:
-            self.active_ui.update(dt)
+        for e in self.elements:
+            if e.visible:
+                e.update(dt)
 
     def render(self, screen):
-        if self.active_ui:
-            self.active_ui.render(screen)
+        for e in self.elements:
+            if e.visible:
+                e.render(screen)
+
+    def handle_event(self, event):
+        for e in self.elements:
+            if e.visible:
+                e.handle_event(event)

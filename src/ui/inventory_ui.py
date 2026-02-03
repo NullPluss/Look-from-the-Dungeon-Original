@@ -1,29 +1,16 @@
 from ui.base_ui import BaseUI
+from ui.widgets.slot import Slot
 
 class InventoryUI(BaseUI):
-    """
-    UI инвентаря.
-    """
-
-    def __init__(self, game, party):
-        self.game = game
-        self.party = party
-
-    def handle_event(self, event):
-        """
-        - клики по предметам
-        - ESC / I → закрыть
-        """
-        pass
-
-    def update(self, dt):
-        pass
+    def __init__(self, rect, rows=4, cols=5):
+        super().__init__(rect)
+        self.slots = []
+        w = self.rect.width//cols
+        h = self.rect.height//rows
+        for r in range(rows):
+            for c in range(cols):
+                self.slots.append(Slot((self.rect.x+c*w, self.rect.y+r*h, w, h)))
 
     def render(self, screen):
-        """
-        Отрисовывает:
-        - фон
-        - сетку предметов
-        - описания
-        """
-        pass
+        for s in self.slots:
+            s.render(screen)
