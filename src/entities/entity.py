@@ -1,18 +1,12 @@
-from pygame import Vector2
+import pygame
 
 class Entity:
-    """
-    Базовый класс всех существ.
-    """
+    def __init__(self, pos):
+        self.image = None
+        self.rect = pygame.Rect(pos[0], pos[1], 32, 32)
 
-    def __init__(self, name, hp, mana, x, y, rect):
-        self.name = name
-        self.hp = hp
-        self.mana = mana
-        self.x = x
-        self.y = y
-        self.move_dir = Vector2(0, 0)  # Направление движения
-        self.rect = rect  # Прямоугольник для столкновений
+    def update(self, dt):
+        pass
 
-    def is_alive(self):
-        return self.hp > 0
+    def render(self, screen):
+        screen.blit(self.image, self.rect)

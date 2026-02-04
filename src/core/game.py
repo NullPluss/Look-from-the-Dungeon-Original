@@ -3,15 +3,12 @@ from core.scene_manager import SceneManager
 from core.window import Window
 from core.audio import AudioManager
 from core.event_manager import EventManager
-from systems.events import StartBattleEvent, OpenInventoryEvent, OpenMapEvent
 from core.scene import BattleScene, DungeonScene, InventoryScene, MapScene
-from world.dungeon import Dungeon
-from world.dungeon_generator_adapter import DungeonGeneratorAdapter
-from world.dungeon_generator import DungeonGenerator
 from entities.party import Party
-from entities.character import Character
+from entities.player import Player
 from ui.ui_manager import UIManager
-
+from core.camera import Camera
+from ui.camera_ui import CameraUI
 
 
 class Game:
@@ -28,27 +25,22 @@ class Game:
         pygame.init()
         pygame.mixer.init()
         pygame.display.set_caption("Look from the Dungeon")
+        self.clock = pygame.time.Clock()
         self.running = True
         self.window = Window()
         self.audio = AudioManager()
-        event_manager = EventManager()
-        scene_manager = SceneManager()
-        ui_manager = UIManager()
-        self.dungeon = Dungeon(DungeonGeneratorAdapter(DungeonGenerator(32, 32)))
-        self.dungeon.generate()
-        start_x, start_y = self.dungeon.get_starting_position()
-        
-        rect = pygame.Rect(start_x * 200, start_y * 200, 10, 20)
-        self.party = Party(Character("Hero", 100, 100, start_x, start_y, rect), {})
-        self.clock = pygame.time.Clock()
+        self.event_manager = EventManager()
+        self.scene_manager = SceneManager()
+        self.ui_manager = UIManager()
 
-        self.scene_manager.push(DungeonScene(self, self.dungeon, self.party))
+        self.player = Player("Hero", (0, 0), None)
+        self.party = Party(self.player, {})
 
-        # self.event_manager.subscribe(StartBattleEvent, self.on_start_battle)
-        # self.event_manager.subscribe(OpenInventoryEvent, self.on_open_inventory)
-        # self.event_manager.subscribe(OpenMapEvent, self.on_open_map)
-        event_manager.subscribe("QUIT", lambda: exit())
-        # event_manager.subscribe("KEYDOWN", on_key)
+        self.scene_manager.register("dungeon", DungeonScene(self))
+        self.scene_manager.set_scene("dungeon")
+
+        self.event_manager.subscribe("QUIT", lambda: exit())
+        self.event_manager.subscribe("KEYDOWN", self.on_keydown)
 
 
     def run(self):
@@ -59,16 +51,14 @@ class Game:
             self.event_manager.process_pygame_events()
             self.ui_manager.update(dt)
             self.scene_manager.update(dt)
-            self.scene_manager.render(self.screen)
-            self.ui_manager.render(self.screen)
+            self.scene_manager.render(self.window.screen)
+            self.ui_manager.render(self.window.screen)
             
             pygame.display.flip()
         
         pygame.quit()
         exit()
 
-    def handle_events(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                self.running = False
-            self.scene_manager.handle_event(event)
+    def on_keydown(self, key):
+        if key == pygame.K_F11:
+            self.window.toggle_fullscreen()

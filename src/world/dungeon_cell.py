@@ -1,37 +1,36 @@
+import pygame
+from utils.layout import LayoutCell
+from world.tile_registry import TileRegistry
+
 class DungeonCell:
-    """
-    Одна клетка подземелья.
-    Может содержать:
-    - монстра
-    - npc
-    - сундук
-    - быть пустой
-    """
 
-    def __init__(self, x: int, y: int):
-        self.x = x
-        self.y = y
-        self.content = None  # Entity | None
-        self.type = "void"  # "void" | "floor" | "exit" | "start"
+    TILE_SIZE = 360
 
-    def enter(self, party):
-        if self.content:
-            self.content.on_enter(party)
+    def __init__(self, x, y, size, tile_type):
+        self.rect = pygame.Rect(x, y, size, size)
+        self.tile_type = tile_type
 
-    def set_type(self, cell_type):
-        self.type = cell_type
+        # self.image = pygame.Surface((size, size))
 
-    def set_content(self, content):
-        self.content = content
+        # if tile_type == LayoutCell.VOID:
+        #     self.image.fill((50, 50, 50))
+        # elif tile_type == LayoutCell.FLOOR:
+        #     self.image.fill((15, 15, 15))
+        # elif tile_type == LayoutCell.EXIT:
+        #     self.image.fill((200, 50, 50))
+        # elif tile_type == LayoutCell.START:
+        #     self.image.fill((50, 200, 50))
 
-    def is_void(self):
-        return self.type == "void"
+        self.image = self._load_texture(tile_type)
 
-    def is_floor(self):
-        return self.type == "floor"
+    def _load_texture(self, tile_type):
+        if tile_type == LayoutCell.FLOOR:
+            return TileRegistry.FLOOR
+        
+        if tile_type == LayoutCell.VOID:
+            return TileRegistry.VOID
+            
 
-    def is_exit(self):
-        return self.type == "exit"
-    
-    def is_start(self):
-        return self.type == "start"
+        surf = pygame.Surface((self.TILE_SIZE, self.TILE_SIZE))
+        surf.fill((0, 0, 0))
+        return surf
