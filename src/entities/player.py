@@ -12,8 +12,6 @@ class Player(Entity):
 
         self.velocity = pygame.Vector2(0, 0)
 
-        # self.image = pygame.Surface((28, 28), pygame.SRCALPHA)
-        # pygame.draw.rect(self.image, (60, 200, 80), (0, 0, 28, 28), border_radius=6)
         self.image = TileRegistry.PLAYER
 
         self.rect = self.image.get_rect(topleft=pos)

@@ -1,22 +1,31 @@
-import pygame
 import os
+import pygame
+from utils.constants import ASSETS_DIR
 
 
 class AssetLoader:
     _cache = {}
 
     @classmethod
-    def load_image(cls, path, colorkey=None, scale=None):
-        if path in cls._cache:
-            return cls._cache[path]
+    def load_image(cls, relative_path, scale=None):
+        if relative_path in cls._cache:
+            return cls._cache[relative_path]
 
-        image = pygame.image.load(path).convert_alpha()
+        full_path = os.path.join(ASSETS_DIR, relative_path)
 
-        if colorkey:
-            image.set_colorkey(colorkey)
+        try:
+            image = pygame.image.load(full_path)
 
-        if scale:
-            image = pygame.transform.scale(image, scale)
+            if pygame.display.get_init():
+                image = image.convert_alpha()
 
-        cls._cache[path] = image
+            if scale:
+                image = pygame.transform.scale(image, scale)
+
+        except Exception as e:
+            print(f"[ASSET ERROR] {full_path}: {e}")
+            image = pygame.Surface(scale or (32, 32))
+            image.fill((255, 0, 255))
+
+        cls._cache[relative_path] = image
         return image

@@ -2,6 +2,8 @@ import pygame
 
 from world.dungeon_cell import DungeonCell
 from utils.layout import LayoutCell
+from utils.constants import TILE_SIZE
+from world.tile_registry import TileRegistry
 
 
 class Dungeon:
@@ -13,8 +15,7 @@ class Dungeon:
     - хранение сущностей
     - коллизии
     """
-
-    TILE_SIZE = 360
+    TILE_SIZE = TILE_SIZE
 
     def __init__(self, generator_adapter):
         self.width = generator_adapter.generator.width
@@ -25,6 +26,37 @@ class Dungeon:
         self.entities = []
 
         self.grid = []
+
+    def reveal_by_player(self, player):
+        cell = self.get_cell_at_pixel(
+            player.rect.centerx,
+            player.rect.centery
+        )
+        if cell:
+            cell.explored = True
+
+    def in_bounds(self, x, y):
+        return 0 <= x < self.width and 0 <= y < self.height
+
+    def is_visible_by_pixel(self, x, y, px, py, radius=1):
+        gx = int(px // TILE_SIZE)
+        gy = int(py // TILE_SIZE)
+
+        return abs(x - gx) <= radius and abs(y - gy) <= radius
+
+    def render(self, screen, camera):
+        for cell in self.cells:
+            if cell.explored:
+                screen.blit(cell.image, camera.apply(cell.rect))
+            elif self.is_visible_by_pixel(
+                cell.rect.x // TILE_SIZE,
+                cell.rect.y // TILE_SIZE,
+                camera.target.rect.centerx,
+                camera.target.rect.centery,
+                radius=1
+            ):
+                dark_image = TileRegistry._make_dark(cell.image)
+                screen.blit(dark_image, camera.apply(cell.rect))
 
     def generate(self):
         """
@@ -52,6 +84,17 @@ class Dungeon:
                     tile_type
                 )
                 self.cells.append(cell)
+
+        self.cell_map = {(c.x, c.y): c for c in self.cells}
+
+    def get_cell(self, x, y):
+        return self.cell_map.get((x, y))
+
+    def get_cell_at_pixel(self, px, py):
+        return self.get_cell(
+            px // TILE_SIZE,
+            py // TILE_SIZE
+        )
 
     # ================== Entity API ==================
 
@@ -121,7 +164,8 @@ class Dungeon:
 
     def is_walkable(self, grid_x, grid_y):
         if 0 <= grid_x < self.width and 0 <= grid_y < self.height:
-            return self.grid[grid_y][grid_x] == LayoutCell.FLOOR or self.grid[grid_y][grid_x] == LayoutCell.EXIT or self.grid[grid_y][grid_x] == LayoutCell.START
+            # return self.grid[grid_y][grid_x] == LayoutCell.FLOOR or self.grid[grid_y][grid_x] == LayoutCell.EXIT or self.grid[grid_y][grid_x] == LayoutCell.START
+            return self.grid[grid_y][grid_x] != LayoutCell.VOID
         return False
     
     def get_start_position(self):

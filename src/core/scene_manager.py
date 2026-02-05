@@ -2,15 +2,30 @@ class SceneManager:
     def __init__(self):
         self.scenes = {}
         self.active_scene = None
+        self.scene_stack = []
 
     def register(self, name, scene):
         self.scenes[name] = scene
 
-    def set_scene(self, name):
+    def remove(self, name):
+        if name in self.scenes:
+            del self.scenes[name]
+
+    def push_scene(self, name):
         if self.active_scene:
+            self.scene_stack.append(self.active_scene)
             self.active_scene.on_exit()
+
         self.active_scene = self.scenes.get(name)
         if self.active_scene:
+            self.active_scene.on_enter()
+
+    def pop_scene(self):
+        if self.active_scene:
+            self.active_scene.on_exit()
+
+        if self.scene_stack:
+            self.active_scene = self.scene_stack.pop()
             self.active_scene.on_enter()
 
     def update(self, dt):

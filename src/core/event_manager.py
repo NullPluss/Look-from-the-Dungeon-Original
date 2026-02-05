@@ -22,8 +22,12 @@ class EventManager:
             if event.type == pygame.QUIT:
                 self.emit("QUIT")
             elif event.type == pygame.KEYDOWN:
-                self.emit("KEYDOWN", key=event.key)
+                self.emit("KEYDOWN", event=event)
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                self.emit("MOUSE_DOWN", pos=event.pos, button=event.button)
+                self.emit("MOUSE_DOWN", event=event)
             elif event.type == pygame.MOUSEBUTTONUP:
-                self.emit("MOUSE_UP", pos=event.pos, button=event.button)
+                self.emit("MOUSE_UP", event=event)
+            elif event.type == pygame.MOUSEMOTION:
+                self.emit("MOUSE_MOVE", event=event)
+            elif event.type == pygame.MOUSEWHEEL:
+                self.emit("MOUSEWHEEL", event=event)

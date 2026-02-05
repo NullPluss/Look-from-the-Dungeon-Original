@@ -1,4 +1,5 @@
 from enum import Enum, auto
+import os
 
 class CellType(Enum):
     EMPTY = auto()
@@ -9,6 +10,10 @@ class CellType(Enum):
     MIMIC = auto()
 
 
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+ASSETS_DIR = os.path.join(BASE_DIR, "assets")
+
+
 BASE_W = 1280
 BASE_H = 720
 
@@ -16,7 +21,7 @@ BASE_H = 720
 FPS = 60
 
 # Размер клетки подземелья
-TILE_SIZE = 64
+TILE_SIZE = 600
 
 # Цвета
 WHITE = (255, 255, 255)

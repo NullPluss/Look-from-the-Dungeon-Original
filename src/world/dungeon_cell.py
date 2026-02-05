@@ -1,27 +1,20 @@
 import pygame
 from utils.layout import LayoutCell
 from world.tile_registry import TileRegistry
+from utils.constants import TILE_SIZE
+
 
 class DungeonCell:
-
-    TILE_SIZE = 360
-
     def __init__(self, x, y, size, tile_type):
         self.rect = pygame.Rect(x, y, size, size)
         self.tile_type = tile_type
-
-        # self.image = pygame.Surface((size, size))
-
-        # if tile_type == LayoutCell.VOID:
-        #     self.image.fill((50, 50, 50))
-        # elif tile_type == LayoutCell.FLOOR:
-        #     self.image.fill((15, 15, 15))
-        # elif tile_type == LayoutCell.EXIT:
-        #     self.image.fill((200, 50, 50))
-        # elif tile_type == LayoutCell.START:
-        #     self.image.fill((50, 200, 50))
-
+        self.explored = False
+        self.visible = False
+        self.x = x // TILE_SIZE
+        self.y = y // TILE_SIZE
+        
         self.image = self._load_texture(tile_type)
+
 
     def _load_texture(self, tile_type):
         if tile_type == LayoutCell.FLOOR:
@@ -29,8 +22,9 @@ class DungeonCell:
         
         if tile_type == LayoutCell.VOID:
             return TileRegistry.VOID
-            
-
-        surf = pygame.Surface((self.TILE_SIZE, self.TILE_SIZE))
-        surf.fill((0, 0, 0))
-        return surf
+        
+        if tile_type == LayoutCell.EXIT:
+            return TileRegistry.EXIT
+        
+        if tile_type == LayoutCell.START:
+            return TileRegistry.FLOOR

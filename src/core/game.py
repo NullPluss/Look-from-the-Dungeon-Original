@@ -3,12 +3,11 @@ from core.scene_manager import SceneManager
 from core.window import Window
 from core.audio import AudioManager
 from core.event_manager import EventManager
-from core.scene import BattleScene, DungeonScene, InventoryScene, MapScene
+from scenes.dungeon_scene import DungeonScene
 from entities.party import Party
 from entities.player import Player
 from ui.ui_manager import UIManager
-from core.camera import Camera
-from ui.camera_ui import CameraUI
+from world.tile_registry import TileRegistry
 
 
 class Game:
@@ -32,15 +31,20 @@ class Game:
         self.event_manager = EventManager()
         self.scene_manager = SceneManager()
         self.ui_manager = UIManager()
+        TileRegistry.init()
 
         self.player = Player("Hero", (0, 0), None)
         self.party = Party(self.player, {})
 
         self.scene_manager.register("dungeon", DungeonScene(self))
-        self.scene_manager.set_scene("dungeon")
+        self.scene_manager.push_scene("dungeon")
 
-        self.event_manager.subscribe("QUIT", lambda: exit())
-        self.event_manager.subscribe("KEYDOWN", self.on_keydown)
+        self.event_manager.subscribe("QUIT", self.quit1)
+        self.event_manager.subscribe("KEYDOWN", self.scene_manager.handle_event)
+        self.event_manager.subscribe("MOUSEWHEEL", self.scene_manager.handle_event)
+        self.event_manager.subscribe("MOUSE_DOWN", self.scene_manager.handle_event)
+        self.event_manager.subscribe("MOUSE_UP", self.scene_manager.handle_event)
+        self.event_manager.subscribe("MOUSE_MOVE", self.scene_manager.handle_event)
 
 
     def run(self):
@@ -59,6 +63,5 @@ class Game:
         pygame.quit()
         exit()
 
-    def on_keydown(self, key):
-        if key == pygame.K_F11:
-            self.window.toggle_fullscreen()
+    def quit1(self):
+        self.running = False

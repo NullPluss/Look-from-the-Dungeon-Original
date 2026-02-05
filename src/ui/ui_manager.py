@@ -1,25 +1,26 @@
 class UIManager:
     def __init__(self):
-        self.elements = []
+        self.stack = []
 
     def add(self, ui):
-        self.elements.append(ui)
+        self.stack.append(ui)
 
-    def remove(self, ui):
-        if ui in self.elements:
-            self.elements.remove(ui)
+    def remove(self, cls):
+        self.stack = [u for u in self.stack if not isinstance(u, cls)]
 
-    def update(self, dt):
-        for e in self.elements:
-            if e.visible:
-                e.update(dt)
-
-    def render(self, screen):
-        for e in self.elements:
-            if e.visible:
-                e.render(screen)
+    def has(self, cls):
+        return any(isinstance(u, cls) for u in self.stack)
 
     def handle_event(self, event):
-        for e in self.elements:
-            if e.visible:
-                e.handle_event(event)
+        for ui in reversed(self.stack):
+            if hasattr(ui, "handle_event"):
+                ui.handle_event(event)
+
+    def render(self, screen):
+        for ui in self.stack:
+            ui.render(screen)
+
+    def update(self, dt):
+        for e in self.stack:
+            if hasattr(e, "update"):
+                e.update(dt)
