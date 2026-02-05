@@ -8,7 +8,7 @@ from entities.party import Party
 from entities.player import Player
 from ui.ui_manager import UIManager
 from world.tile_registry import TileRegistry
-
+from utils.asset_registry import AssetRegistry
 
 class Game:
     """
@@ -32,6 +32,7 @@ class Game:
         self.scene_manager = SceneManager()
         self.ui_manager = UIManager()
         TileRegistry.init()
+        AssetRegistry.init()
 
         self.player = Player("Hero", (0, 0), None)
         self.party = Party(self.player, {})

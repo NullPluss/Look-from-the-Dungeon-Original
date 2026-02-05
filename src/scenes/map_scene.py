@@ -16,10 +16,7 @@ class MapScene(Scene):
 
         self.camera = Camera(w, h, smoothing=0.25)
 
-        # if self.game.player:
-        #     self.camera.follow(self.game.player)
-
-        self.map_ui = MapUI(self.dungeon, self.camera)
+        self.map_ui = MapUI(self.dungeon, self.camera, self.game.player)
 
         self.game.ui_manager.add(self.map_ui)
 

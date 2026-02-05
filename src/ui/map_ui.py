@@ -1,18 +1,21 @@
 import pygame
-from utils.layout import LayoutCell
 from world.tile_registry import TileRegistry
+from utils.asset_registry import AssetRegistry
 from utils.constants import TILE_SIZE
 
 class MapUI:
-    def __init__(self, dungeon, camera):
+    def __init__(self, dungeon, camera, player):
         self.dungeon = dungeon
         self.camera = camera
 
-        self.zoom = 2.5
+        self.zoom = 5
         self.tile_size = 6
 
         self.dragging = False
         self.last_mouse = None
+
+        self.player = player
+        
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEWHEEL:
@@ -36,28 +39,6 @@ class MapUI:
             cur = pygame.Vector2(pygame.mouse.get_pos())
             self.camera.offset -= (cur - self.last_mouse)
             self.last_mouse = cur
-
-
-    def rebuild_cache(self):
-        size = int(self.tile_size * self.zoom)
-
-        w = self.dungeon.width * size
-        h = self.dungeon.height * size
-
-        self.cached_surface = pygame.Surface((w, h), pygame.SRCALPHA)
-
-        floor_scaled = pygame.transform.smoothscale(TileRegistry.FLOOR, (size, size))
-        void_scaled  = pygame.transform.smoothscale(TileRegistry.VOID,  (size, size))
-
-        for cell in self.dungeon.cells:
-            tile = floor_scaled if cell.explored else void_scaled
-
-            gx = cell.rect.x // TILE_SIZE
-            gy = cell.rect.y // TILE_SIZE
-
-            self.cached_surface.blit(tile, (gx * size, gy * size))
-
-        self.cached_zoom = self.zoom
 
     def render(self, screen):
         size = int(self.tile_size * self.zoom)
@@ -88,6 +69,11 @@ class MapUI:
                 py = y * size - cam_y
 
                 screen.blit(tile, (px, py))
+        
+        # Рендер игрока там где он стоит
+        icon = pygame.transform.smoothscale(AssetRegistry.PLAYER, (10, 20))
+        screen.blit(icon, (self.player.rect.centerx // TILE_SIZE * size - cam_x - 5,
+                                   self.player.rect.centery // TILE_SIZE * size - cam_y - 10))
 
 
     def update(self, dt):

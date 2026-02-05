@@ -1,6 +1,6 @@
 import pygame
 from entities.entity import Entity
-from world.tile_registry import TileRegistry
+from utils.asset_registry import AssetRegistry
 
 class Player(Entity):
     def __init__(self, name, pos, dungeon, speed=250):
@@ -12,7 +12,7 @@ class Player(Entity):
 
         self.velocity = pygame.Vector2(0, 0)
 
-        self.image = TileRegistry.PLAYER
+        self.image = AssetRegistry.PLAYER
 
         self.rect = self.image.get_rect(topleft=pos)
 

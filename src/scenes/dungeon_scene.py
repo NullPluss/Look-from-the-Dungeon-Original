@@ -1,7 +1,6 @@
 import pygame
 from core.scene import Scene
 from ui.camera_ui import CameraUI
-from ui.map_ui import MapUI
 from ui.ui_manager import UIManager
 from world.dungeon import Dungeon
 from world.dungeon_generator_adapter import DungeonGeneratorAdapter
@@ -69,9 +68,6 @@ class DungeonScene(Scene):
         #     self.game.scene_manager.push_scene("inventory")
         #     return
         
-
-        
-
     def update(self, dt):
         self.player.update(dt)
         self.dungeon.reveal_by_player(self.player)
