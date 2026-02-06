@@ -8,7 +8,7 @@ class MapUI:
         self.dungeon = dungeon
         self.camera = camera
 
-        self.zoom = 5
+        self.zoom = 2.6
         self.tile_size = 6
 
         self.dragging = False
@@ -20,7 +20,7 @@ class MapUI:
     def handle_event(self, event):
         if event.type == pygame.MOUSEWHEEL:
             old_zoom = self.zoom
-            self.zoom = max(0.6, min(8.0, self.zoom + event.y * 0.15))
+            self.zoom = max(2.5, min(15.0, self.zoom + event.y * 0.15))
 
             # корректируем offset, чтобы зум был относительно курсора
             if self.zoom != old_zoom:
@@ -63,7 +63,10 @@ class MapUI:
                 if not cell:
                     continue
 
-                tile = floor if cell.explored else void
+                if cell.explored:
+                    tile = floor
+                else:
+                    tile = void
 
                 px = x * size - cam_x
                 py = y * size - cam_y
@@ -71,9 +74,9 @@ class MapUI:
                 screen.blit(tile, (px, py))
         
         # Рендер игрока там где он стоит
-        icon = pygame.transform.smoothscale(AssetRegistry.PLAYER, (10, 20))
-        screen.blit(icon, (self.player.rect.centerx // TILE_SIZE * size - cam_x - 5,
-                                   self.player.rect.centery // TILE_SIZE * size - cam_y - 10))
+        icon = pygame.transform.smoothscale(AssetRegistry.PLAYER, (size // 1.5, size))
+        screen.blit(icon, (self.player.rect.centerx // TILE_SIZE * size - cam_x + size // 4,
+                                   self.player.rect.centery // TILE_SIZE * size - cam_y))
 
 
     def update(self, dt):

@@ -45,9 +45,73 @@ class Dungeon:
         return abs(x - gx) <= radius and abs(y - gy) <= radius
 
     def render(self, screen, camera):
+        WALL = (115, 75, 40)
+        OUTLINE = (0, 0, 0)
         for cell in self.cells:
             if cell.explored:
                 screen.blit(cell.image, camera.apply(cell.rect))
+                near_walls = self.get_near_walls(cell.rect)
+                if near_walls:
+                    for wall in near_walls:
+                        dx = (wall.x - cell.rect.x) // TILE_SIZE
+                        dy = (wall.y - cell.rect.y) // TILE_SIZE
+                        if dx == -1 and dy == 0:
+                            pygame.draw.rect(screen, WALL, camera.apply(pygame.Rect(
+                                wall.x + TILE_SIZE,
+                                wall.y,
+                                8,
+                                wall.height + 4
+                            )))
+                            
+                            pygame.draw.rect(screen, OUTLINE, camera.apply(pygame.Rect(
+                                wall.x + TILE_SIZE + 8,
+                                wall.y,
+                                2,
+                                wall.height + 4
+                            )))
+                        if dx == 1 and dy == 0:
+                            pygame.draw.rect(screen, WALL, camera.apply(pygame.Rect(
+                                wall.x - 8,
+                                wall.y,
+                                8,
+                                wall.height + 4
+                            )))
+                            
+                            pygame.draw.rect(screen, OUTLINE, camera.apply(pygame.Rect(
+                                wall.x - 10,
+                                wall.y,
+                                2,
+                                wall.height + 4
+                            )))
+                        if dx == 0 and dy == -1:
+                            pygame.draw.rect(screen, WALL, camera.apply(pygame.Rect(
+                                wall.x,
+                                wall.y + TILE_SIZE,
+                                wall.width + 4,
+                                8
+                            )))
+                            
+                            pygame.draw.rect(screen, OUTLINE, camera.apply(pygame.Rect(
+                                wall.x,
+                                wall.y + TILE_SIZE + 8,
+                                wall.width + 4,
+                                2
+                            )))
+                        if dx == 0 and dy == 1:
+                            pygame.draw.rect(screen, WALL, camera.apply(pygame.Rect(
+                                wall.x,
+                                wall.y - 8,
+                                wall.width + 4,
+                                8
+                            )))
+                            
+                            pygame.draw.rect(screen, OUTLINE, camera.apply(pygame.Rect(
+                                wall.x,
+                                wall.y - 10,
+                                wall.width + 4,
+                                2
+                            )))
+
             elif self.is_visible_by_pixel(
                 cell.rect.x // TILE_SIZE,
                 cell.rect.y // TILE_SIZE,
