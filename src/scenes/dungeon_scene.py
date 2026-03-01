@@ -2,6 +2,7 @@ import pygame
 from core.scene import Scene
 from ui.camera_ui import CameraUI
 from ui.ui_manager import UIManager
+from ui.pause_menu import PauseMenu
 from world.dungeon import Dungeon
 from world.dungeon_generator_adapter import DungeonGeneratorAdapter
 from world.dungeon_generator import DungeonGenerator
@@ -22,6 +23,7 @@ class DungeonScene(Scene):
         self.dungeon = None
         self.player = None
         self.camera = None
+        self.paused = False
 
         self.ui_manager = UIManager()
 
@@ -42,9 +44,11 @@ class DungeonScene(Scene):
         # self.ui_manager.add(InventoryUI((20, h - 240, 320, 220)))
 
         self.dungeon.add_entity(self.player)
+        self.entity_manager = self.dungeon.entity_manager
 
     def on_enter(self):
         self.ui_manager.add(CameraUI(self.camera))
+        self.game.audio.play_music("assets/sounds/background.mp3")
 
     def on_exit(self):
         self.ui_manager.remove(CameraUI)
@@ -56,6 +60,13 @@ class DungeonScene(Scene):
         - M → карта
         """
         if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.toggle_pause()
+                return
+            
+            if self.paused:
+                return
+            
             if event.key == pygame.K_m:
                 self.game.scene_manager.register("map", MapScene(self.game, self.dungeon))
                 self.game.scene_manager.push_scene("map")
@@ -63,12 +74,18 @@ class DungeonScene(Scene):
             if event.key == pygame.K_F11:
                 self.game.window.toggle_fullscreen()
                 return
+            if event.key == pygame.K_e:
+                self.try_interact()
         # if key == pygame.K_i:
         #     self.game.scene_manager.register("inventory", InventoryScene(self.game, self.game.party))
         #     self.game.scene_manager.push_scene("inventory")
         #     return
         
     def update(self, dt):
+        if self.paused:
+            self.ui_manager.update(dt)
+            return
+        
         self.player.update(dt)
         self.dungeon.reveal_by_player(self.player)
 
@@ -93,3 +110,31 @@ class DungeonScene(Scene):
 
         # ===== UI поверх =====
         self.ui_manager.render(screen)
+
+    def try_interact(self):
+        nearby = self.entity_manager.get_near(self.player.rect, 40)
+
+        if not nearby:
+            return
+
+        ent = min(nearby, key=lambda e: self.player.rect.center.distance_to(e.rect.center))
+
+        ent.interact(self.player, self.game)
+
+    def toggle_pause(self):
+        self.paused = not self.paused
+        
+        if self.paused:
+            pause_menu = PauseMenu(self.screen.get_size())
+            pause_menu.on_resume = self.resume_game
+            pause_menu.on_quit = self.quit_game
+            self.ui_manager.add(pause_menu)
+        else:
+            self.ui_manager.remove(PauseMenu)
+
+    def resume_game(self):
+        self.paused = False
+        self.ui_manager.remove(PauseMenu)
+
+    def quit_game(self):
+        self.game.running = False

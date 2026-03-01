@@ -41,15 +41,42 @@ class Game:
         self.scene_manager.push_scene("dungeon")
 
         self.event_manager.subscribe("QUIT", self.quit1)
-        self.event_manager.subscribe("KEYDOWN", self.scene_manager.handle_event)
-        self.event_manager.subscribe("MOUSEWHEEL", self.scene_manager.handle_event)
-        self.event_manager.subscribe("MOUSE_DOWN", self.scene_manager.handle_event)
-        self.event_manager.subscribe("MOUSE_UP", self.scene_manager.handle_event)
-        self.event_manager.subscribe("MOUSE_MOVE", self.scene_manager.handle_event)
+        self.event_manager.subscribe("KEYDOWN", self.handle_keydown)
+        self.event_manager.subscribe("MOUSEWHEEL", self.handle_mousewheel)
+        self.event_manager.subscribe("MOUSE_DOWN", self.handle_mouse_down)
+        self.event_manager.subscribe("MOUSE_UP", self.handle_mouse_up)
+        self.event_manager.subscribe("MOUSE_MOVE", self.handle_mouse_move)
+
+    def handle_keydown(self, event):
+        if event.key == pygame.K_ESCAPE:
+            self.scene_manager.handle_event(event)
+        elif not getattr(self.scene_manager.active_scene, 'paused', False):
+            self.scene_manager.handle_event(event)
+        else:
+            self.ui_manager.handle_event(event)
+    
+    def handle_mousewheel(self, event):
+        if not getattr(self.scene_manager.active_scene, 'paused', False):
+            self.scene_manager.handle_event(event)
+    
+    def handle_mouse_down(self, event):
+        if getattr(self.scene_manager.active_scene, 'paused', False):
+            self.ui_manager.handle_event(event)
+        else:
+            self.scene_manager.handle_event(event)
+    
+    def handle_mouse_up(self, event):
+        if not getattr(self.scene_manager.active_scene, 'paused', False):
+            self.scene_manager.handle_event(event)
+    
+    def handle_mouse_move(self, event):
+        if getattr(self.scene_manager.active_scene, 'paused', False):
+            self.ui_manager.handle_event(event)
+        else:
+            self.scene_manager.handle_event(event)
 
 
     def run(self):
-        self.audio.play_music("sounds/background.mp3")
         while self.running:
             dt = self.clock.tick(60) / 1000
             

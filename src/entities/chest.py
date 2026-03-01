@@ -1,8 +1,15 @@
-class Chest:
-    def __init__(self, position):
-        self.position = position
-        self.contents = self.generate_contents()
+from entities.entity import Entity
+from utils.asset_registry import AssetRegistry
 
-    def generate_contents(self):
-        # Логика генерации содержимого сундука
-        return ["gold", "potion", "sword"]
+class Chest(Entity):
+    def __init__(self, pos):
+        super().__init__(pos)
+        self.opened = False
+        self.image = AssetRegistry.CHEST
+
+    def interact(self, player, game):
+        if self.opened:
+            return
+
+        self.opened = True
+        game.event_manager.emit("OPEN_CHEST", chest=self)

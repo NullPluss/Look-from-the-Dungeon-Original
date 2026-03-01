@@ -1,19 +1,12 @@
 from entities.entity import Entity
 
 class NPC(Entity):
-    """
-    NPC.
-    Имеет:
-    - профессию
-    - квест
-    - торговлю
-    """
+    def __init__(self, pos, dialogue):
+        super().__init__(pos)
+        self.dialogue = dialogue
 
-    def __init__(self, name, profession):
-        pass
+    def interact(self, player, game):
+        game.event_manager.emit("START_DIALOG", npc=self)
 
-    def give_quest(self):
-        pass
-
-    def trade(self, party):
+    def update(self, dt):
         pass

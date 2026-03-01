@@ -1,6 +1,5 @@
-from src.entities.monster import Monster
+from entities.chest import Chest
 
-class Mimic(Monster):
-    """
-    Мимик — особый монстр, маскирующийся под сундук.
-    """
+class Mimic(Chest):
+    def interact(self, player, game):
+        game.event_manager.emit("START_COMBAT", enemy=self)

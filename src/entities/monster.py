@@ -1,13 +1,8 @@
 from entities.entity import Entity
-
-
 class Monster(Entity):
-    """
-    Монстр.
-    Имеет:
-    - таблицу лута
-    - поведение в бою
-    """
+    def __init__(self, pos, stats):
+        super().__init__(pos)
+        self.stats = stats
 
-    def generate_loot(self):
-        pass
+    def interact(self, player, game):
+        game.event_manager.emit("START_COMBAT", enemy=self)

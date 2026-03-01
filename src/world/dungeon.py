@@ -1,9 +1,12 @@
 import pygame
-
+import random
 from world.dungeon_cell import DungeonCell
 from utils.layout import LayoutCell
 from utils.constants import TILE_SIZE
 from world.tile_registry import TileRegistry
+from entities.chest import Chest
+from entities.mimic import Mimic
+from core.entity_manager import EntityManager
 
 
 class Dungeon:
@@ -24,6 +27,7 @@ class Dungeon:
  
         self.cells = []
         self.entities = []
+        self.entity_manager = EntityManager()
 
         self.grid = []
 
@@ -228,7 +232,6 @@ class Dungeon:
 
     def is_walkable(self, grid_x, grid_y):
         if 0 <= grid_x < self.width and 0 <= grid_y < self.height:
-            # return self.grid[grid_y][grid_x] == LayoutCell.FLOOR or self.grid[grid_y][grid_x] == LayoutCell.EXIT or self.grid[grid_y][grid_x] == LayoutCell.START
             return self.grid[grid_y][grid_x] != LayoutCell.VOID
         return False
     
@@ -237,3 +240,28 @@ class Dungeon:
             if cell.tile_type == LayoutCell.START:
                 return cell.rect.topleft
         return None
+    
+
+
+    def populate_dungeon(dungeon, monster_factory, npc_factory):
+        entities = []
+
+        for cell in dungeon.cells:
+            if not cell.explored or cell.tile_type != LayoutCell.FLOOR:
+                continue
+
+            r = random.random()
+
+            if r < 0.05:  # 5% mimic
+                entities.append(Mimic(cell.rect.center))
+
+            elif r < 0.15:  # +10% npc = 15%
+                entities.append(npc_factory.create(cell.rect.center))
+
+            elif r < 0.45:  # +30% monster = 45%
+                entities.append(monster_factory.create(cell.rect.center))
+
+            elif r < 0.65:  # +20% chest = 65%
+                entities.append(Chest(cell.rect.center))
+
+        return entities

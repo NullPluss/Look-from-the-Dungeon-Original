@@ -3,9 +3,9 @@ import pygame
 from utils.constants import TILE_SIZE
 
 class TileRegistry:
-    FLOOR = pygame.Surface((32, 32), masks=((15, 15, 15)))
-    VOID = pygame.Surface((32, 32), masks=((50, 50, 50)))
-    EXIT = pygame.Surface((32, 32), masks=((200, 50, 50)))
+    FLOOR = pygame.Surface((32, 32))
+    VOID = pygame.Surface((32, 32))
+    EXIT = pygame.Surface((32, 32))
 
 
     @classmethod
