@@ -143,11 +143,15 @@ class Dungeon:
         from utils.layout import LayoutCell
         
         monster_types = get_monster_types()
-        type_list = list(monster_types.values())
+        
+        # Создание взвешенного списка типов монстров
+        weighted_types = []
+        for type_name, type_data in monster_types.items():
+            weighted_types.extend([type_data] * type_data["weight"])
         
         for cell in self.cells:
             if cell.tile_type == LayoutCell.FLOOR and random.random() < 0.4:
-                monster_data = random.choice(type_list)
+                monster_data = random.choice(weighted_types)
                 monster = Monster(cell.rect.center, monster_data)
                 self.add_entity(monster)
 

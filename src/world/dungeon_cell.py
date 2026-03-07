@@ -18,7 +18,7 @@ class DungeonCell:
 
     def _load_texture(self, tile_type):
         if tile_type == LayoutCell.FLOOR:
-            return TileRegistry.FLOOR
+            return TileRegistry.get_random_floor()
         
         if tile_type == LayoutCell.VOID:
             return TileRegistry.VOID
@@ -27,4 +27,4 @@ class DungeonCell:
             return TileRegistry.EXIT
         
         if tile_type == LayoutCell.START:
-            return TileRegistry.FLOOR
+            return TileRegistry.get_random_floor()

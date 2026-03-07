@@ -8,6 +8,7 @@ class AssetRegistry:
     GOBLIN_MAGE = pygame.Surface((32, 32))
     GOBLIN_WARRIOR = pygame.Surface((32, 32))
     SKELETON = pygame.Surface((32, 32))
+    SKELETON_WARRIOR = pygame.Surface((32, 32))
     SKELETON_HUNTMAN = pygame.Surface((32, 32))
 
     @classmethod
@@ -18,4 +19,5 @@ class AssetRegistry:
         cls.GOBLIN_MAGE = AssetLoader.load_image("entities/monsters/goblin_mage.png", scale=(90, 90))
         cls.GOBLIN_WARRIOR = AssetLoader.load_image("entities/monsters/goblin_warior.png", scale=(90, 90))
         cls.SKELETON = AssetLoader.load_image("entities/monsters/skelet.png", scale=(90, 90))
+        cls.SKELETON_WARRIOR = AssetLoader.load_image("entities/monsters/skelet_warior.png", scale=(90, 90))
         cls.SKELETON_HUNTMAN = AssetLoader.load_image("entities/monsters/skelet_huntman.png", scale=(90, 90))

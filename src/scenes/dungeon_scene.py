@@ -84,6 +84,11 @@ class DungeonScene(Scene):
                 return
             if event.key == pygame.K_e:
                 self.try_interact()
+        elif event.type == pygame.MOUSEBUTTONDOWN and self.inventory_open:
+            # Передача кликов в инвентарь
+            for ui in self.ui_manager.stack:
+                if isinstance(ui, InventoryUI):
+                    ui.handle_event(event)
         # if key == pygame.K_i:
         #     self.game.scene_manager.register("inventory", InventoryScene(self.game, self.game.party))
         #     self.game.scene_manager.push_scene("inventory")
@@ -103,12 +108,20 @@ class DungeonScene(Scene):
             self._go_to_next_level()
             return
         
-        # Проверка столкновения с монстрами
-        for entity in self.dungeon.entities:
-            if entity != self.player and hasattr(entity, 'hp'):
-                if self.player.rect.colliderect(entity.rect):
-                    entity.interact(self.player, self.game)
-                    return
+        # Проверка столкновения с монстрами на той же клетке
+        player_cell = self.dungeon.get_cell_at_pixel(self.player.rect.centerx, self.player.rect.centery)
+        if player_cell:
+            enemies_on_cell = []
+            for entity in self.dungeon.entities:
+                if entity != self.player and hasattr(entity, 'hp'):
+                    entity_cell = self.dungeon.get_cell_at_pixel(entity.rect.centerx, entity.rect.centery)
+                    if entity_cell and entity_cell == player_cell:
+                        enemies_on_cell.append(entity)
+            
+            if enemies_on_cell:
+                # Начать бой со всеми монстрами на клетке
+                enemies_on_cell[0].interact(self.player, self.game)
+                return
 
         for entity in self.dungeon.entities:
             entity.update(dt)
@@ -127,9 +140,14 @@ class DungeonScene(Scene):
         # ===== Отрисовка карты =====
         self.dungeon.render(screen, self.camera)
 
-        # ===== Отрисовка сущностей =====
-        for entity in self.dungeon.entities:
-            screen.blit(entity.image, self.camera.apply(entity.rect))
+        # ===== Отрисовка сущностей (только на той же клетке что и игрок) =====
+        player_cell = self.dungeon.get_cell_at_pixel(self.player.rect.centerx, self.player.rect.centery)
+        if player_cell:
+            for entity in self.dungeon.entities:
+                if entity != self.player and hasattr(entity, 'hp'):
+                    entity_cell = self.dungeon.get_cell_at_pixel(entity.rect.centerx, entity.rect.centery)
+                    if entity_cell and entity_cell == player_cell:
+                        screen.blit(entity.image, self.camera.apply(entity.rect))
 
         # ===== Отрисовка игрока =====
         screen.blit(self.player.image, self.camera.apply(self.player.rect))
@@ -170,7 +188,7 @@ class DungeonScene(Scene):
         
         if self.inventory_open:
             w, h = self.screen.get_size()
-            inventory_ui = InventoryUI((w - 320, 100, 300, 400), self.game.party.inventory)
+            inventory_ui = InventoryUI((w - 320, 100, 300, 400), self.game.party.inventory, self.player)
             self.ui_manager.add(inventory_ui)
         else:
             self.ui_manager.remove(InventoryUI)
