@@ -3,9 +3,6 @@ from core.scene_manager import SceneManager
 from core.window import Window
 from core.audio import AudioManager
 from core.event_manager import EventManager
-from scenes.dungeon_scene import DungeonScene
-from entities.party import Party
-from entities.player import Player
 from ui.ui_manager import UIManager
 from world.tile_registry import TileRegistry
 from utils.asset_registry import AssetRegistry
@@ -34,13 +31,15 @@ class Game:
         TileRegistry.init()
         AssetRegistry.init()
 
-        self.player = Player("Hero", (0, 0), None)
-        self.party = Party(self.player, {})
+        self.player = None
+        self.party = None
 
-        self.scene_manager.register("dungeon", DungeonScene(self))
-        self.scene_manager.push_scene("dungeon")
+        from scenes.main_menu_scene import MainMenuScene
+        self.scene_manager.register("main_menu", MainMenuScene(self))
+        self.scene_manager.push_scene("main_menu")
 
         self.event_manager.subscribe("QUIT", self.quit1)
+        self.event_manager.subscribe("START_COMBAT", self.start_combat)
         self.event_manager.subscribe("KEYDOWN", self.handle_keydown)
         self.event_manager.subscribe("MOUSEWHEEL", self.handle_mousewheel)
         self.event_manager.subscribe("MOUSE_DOWN", self.handle_mouse_down)
@@ -54,6 +53,12 @@ class Game:
             self.scene_manager.handle_event(event)
         else:
             self.ui_manager.handle_event(event)
+    
+    def start_combat(self, enemy):
+        from scenes.battle_scene import BattleScene
+        battle = BattleScene(self, self.player, enemy)
+        self.scene_manager.register("battle", battle)
+        self.scene_manager.push_scene("battle")
     
     def handle_mousewheel(self, event):
         if not getattr(self.scene_manager.active_scene, 'paused', False):

@@ -9,6 +9,12 @@ class Player(Entity):
         self.name = name
         self.dungeon = dungeon
         self.speed = speed
+        
+        self.hp = 100
+        self.max_hp = 100
+        self.mp = 100
+        self.max_mp = 100
+        self.initiative_bonus = 5
 
         self.velocity = pygame.Vector2(0, 0)
 

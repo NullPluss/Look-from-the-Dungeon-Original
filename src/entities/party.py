@@ -1,3 +1,5 @@
+from systems.inventory_system import Inventory
+
 class Party:
     """
     Отряд игрока.
@@ -9,7 +11,10 @@ class Party:
     def __init__(self, player, inventory):
         self.player = player
         self.members = [self.player]
-        self.inventory = inventory
+        if isinstance(inventory, Inventory):
+            self.inventory = inventory
+        else:
+            self.inventory = Inventory()
 
     def get_player(self):
         return self.player

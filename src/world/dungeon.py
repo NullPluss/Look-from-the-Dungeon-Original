@@ -134,6 +134,22 @@ class Dungeon:
             self.grid = self.generator_adapter.generate()
 
         self._build_cells()
+        self._spawn_monsters()
+    
+    def _spawn_monsters(self):
+        import random
+        from entities.monster import Monster
+        from entities.monster_types import get_monster_types
+        from utils.layout import LayoutCell
+        
+        monster_types = get_monster_types()
+        type_list = list(monster_types.values())
+        
+        for cell in self.cells:
+            if cell.tile_type == LayoutCell.FLOOR and random.random() < 0.4:
+                monster_data = random.choice(type_list)
+                monster = Monster(cell.rect.center, monster_data)
+                self.add_entity(monster)
 
     def _build_cells(self):
         """
