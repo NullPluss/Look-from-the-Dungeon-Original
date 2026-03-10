@@ -20,7 +20,8 @@ class Party:
         return self.player
 
     def add_member(self, character):
-        self.members.append(character)
+        if len(self.members) < 4:  # Максимум 4 (игрок + 3 НПС)
+            self.members.append(character)
 
     def add_item(self, item):
         self.inventory.add_item(item)

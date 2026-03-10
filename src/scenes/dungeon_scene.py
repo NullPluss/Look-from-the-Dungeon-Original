@@ -61,8 +61,10 @@ class DungeonScene(Scene):
     def handle_event(self, event):
         """
         Обрабатывает:
+        - E → взаимодействие с NPC
         - I → инвентарь
         - M → карта
+        - Клик мышью → взаимодействие с NPC
         """
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -72,23 +74,23 @@ class DungeonScene(Scene):
             if self.paused:
                 return
             
-            if event.key == pygame.K_i:
-                self.toggle_inventory()
-                return
-            if event.key == pygame.K_m:
-                self.game.scene_manager.register("map", MapScene(self.game, self.dungeon))
-                self.game.scene_manager.push_scene("map")
-                return
-            if event.key == pygame.K_F11:
-                self.game.window.toggle_fullscreen()
-                return
             if event.key == pygame.K_e:
                 self.try_interact()
+            elif event.key == pygame.K_i:
+                self.toggle_inventory()
+            elif event.key == pygame.K_m:
+                self.game.scene_manager.register("map", MapScene(self.game, self.dungeon))
+                self.game.scene_manager.push_scene("map")
+            elif event.key == pygame.K_F11:
+                self.game.window.toggle_fullscreen()
         elif event.type == pygame.MOUSEBUTTONDOWN and self.inventory_open:
             # Передача кликов в инвентарь
             for ui in self.ui_manager.stack:
                 if isinstance(ui, InventoryUI):
                     ui.handle_event(event)
+        elif event.type == pygame.MOUSEBUTTONDOWN and not self.paused:
+            # Клик по NPC
+            self.try_click_npc(event.pos)
         # if key == pygame.K_i:
         #     self.game.scene_manager.register("inventory", InventoryScene(self.game, self.game.party))
         #     self.game.scene_manager.push_scene("inventory")
@@ -108,12 +110,12 @@ class DungeonScene(Scene):
             self._go_to_next_level()
             return
         
-        # Проверка столкновения с монстрами на той же клетке
+        # Проверка столкновения с монстрами на той же клетке (автоматический бой)
         player_cell = self.dungeon.get_cell_at_pixel(self.player.rect.centerx, self.player.rect.centery)
         if player_cell:
             enemies_on_cell = []
             for entity in self.dungeon.entities:
-                if entity != self.player and hasattr(entity, 'hp'):
+                if entity != self.player and hasattr(entity, 'hp') and not hasattr(entity, 'profession'):
                     entity_cell = self.dungeon.get_cell_at_pixel(entity.rect.centerx, entity.rect.centery)
                     if entity_cell and entity_cell == player_cell:
                         enemies_on_cell.append(entity)
@@ -148,6 +150,11 @@ class DungeonScene(Scene):
                     entity_cell = self.dungeon.get_cell_at_pixel(entity.rect.centerx, entity.rect.centery)
                     if entity_cell and entity_cell == player_cell:
                         screen.blit(entity.image, self.camera.apply(entity.rect))
+                # Отрисовка НПС (видны всегда на исследованных клетках)
+                elif hasattr(entity, 'profession'):
+                    entity_cell = self.dungeon.get_cell_at_pixel(entity.rect.centerx, entity.rect.centery)
+                    if entity_cell and entity_cell.explored:
+                        screen.blit(entity.image, self.camera.apply(entity.rect))
 
         # ===== Отрисовка игрока =====
         screen.blit(self.player.image, self.camera.apply(self.player.rect))
@@ -155,13 +162,29 @@ class DungeonScene(Scene):
         # ===== UI поверх =====
         self.ui_manager.render(screen)
 
+    def try_click_npc(self, mouse_pos):
+        for entity in self.dungeon.entities:
+            if hasattr(entity, 'profession'):
+                entity_cell = self.dungeon.get_cell_at_pixel(entity.rect.centerx, entity.rect.centery)
+                if entity_cell and entity_cell.explored:
+                    screen_rect = self.camera.apply(entity.rect)
+                    if screen_rect.collidepoint(mouse_pos):
+                        entity.interact(self.player, self.game)
+                        return
+    
     def try_interact(self):
-        nearby = self.entity_manager.get_near(self.player.rect, 40)
+        nearby = self.entity_manager.get_near(self.player.rect, 300)
 
         if not nearby:
             return
+        
+        # Фильтруем только NPC (не монстров)
+        npcs = [e for e in nearby if hasattr(e, 'profession')]
+        
+        if not npcs:
+            return
 
-        ent = min(nearby, key=lambda e: self.player.rect.center.distance_to(e.rect.center))
+        ent = min(npcs, key=lambda e: self.player.rect.center.distance_to(e.rect.center))
 
         ent.interact(self.player, self.game)
 

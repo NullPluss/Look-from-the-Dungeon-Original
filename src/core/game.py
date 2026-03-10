@@ -40,6 +40,7 @@ class Game:
 
         self.event_manager.subscribe("QUIT", self.quit1)
         self.event_manager.subscribe("START_COMBAT", self.start_combat)
+        self.event_manager.subscribe("START_DIALOG", self.start_dialog)
         self.event_manager.subscribe("KEYDOWN", self.handle_keydown)
         self.event_manager.subscribe("MOUSEWHEEL", self.handle_mousewheel)
         self.event_manager.subscribe("MOUSE_DOWN", self.handle_mouse_down)
@@ -59,6 +60,12 @@ class Game:
         battle = BattleScene(self, self.player, enemy)
         self.scene_manager.register("battle", battle)
         self.scene_manager.push_scene("battle")
+    
+    def start_dialog(self, npc):
+        from scenes.dialog_scene import DialogScene
+        dialog = DialogScene(self, npc)
+        self.scene_manager.register("dialog", dialog)
+        self.scene_manager.push_scene("dialog")
     
     def handle_mousewheel(self, event):
         if not getattr(self.scene_manager.active_scene, 'paused', False):

@@ -135,6 +135,28 @@ class Dungeon:
 
         self._build_cells()
         self._spawn_monsters()
+        self._spawn_npcs()
+    
+    def _spawn_npcs(self):
+        import random
+        from entities.npc import NPC
+        from entities.npc_types import get_npc_types
+        from utils.layout import LayoutCell
+        
+        npc_types = get_npc_types()
+        available_npcs = list(npc_types.values())
+        random.shuffle(available_npcs)
+        spawned_professions = set()
+        
+        for cell in self.cells:
+            if cell.tile_type == LayoutCell.FLOOR and random.random() < 0.2:
+                # Проверяем, есть ли еще доступные НПС
+                remaining_npcs = [npc for npc in available_npcs if npc["profession"] not in spawned_professions]
+                if remaining_npcs:
+                    npc_data = remaining_npcs[0]
+                    npc = NPC(cell.rect.center, npc_data)
+                    self.add_entity(npc)
+                    spawned_professions.add(npc_data["profession"])
     
     def _spawn_monsters(self):
         import random

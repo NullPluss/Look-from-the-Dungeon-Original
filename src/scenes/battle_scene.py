@@ -8,13 +8,13 @@ class BattleScene(Scene):
     def __init__(self, game, player, enemy):
         super().__init__(game)
         self.player = player
-        self.enemy = enemy
-        self.state = "initiative"
+        self.party = game.party.members
+        self.enemies = [enemy]
+        self.state = "party_turn"
         self.font = pygame.font.SysFont("arial", 24)
         self.small_font = pygame.font.SysFont("arial", 16)
         self.message = ""
         
-        # Поле боя 15x15
         self.grid_width = 15
         self.grid_height = 15
         
@@ -23,21 +23,22 @@ class BattleScene(Scene):
         self.start_x = (w - self.cell_size * self.grid_width) // 2
         self.start_y = (h - self.cell_size * self.grid_height) // 2
         
-        # Позиции в клетках (x, y)
-        self.player_cell = [2, 7]
-        self.enemy_cell = [12, 7]
+        self.positions = {}
+        self._setup_positions()
         
-        # Система действий
+        self.current_character_index = 0
+        self.current_character = self.party[0]
         self.actions_left = 2
         self.max_actions = 2
         
         self.loot_message = ""
         
-        # Масштабирование ассетов под размер клетки
-        self.player_image = self._scale_to_cell(self.player.image)
-        self.enemy_image = self._scale_to_cell(self.enemy.image)
+        self.scaled_images = {}
+        for member in self.party:
+            self.scaled_images[member] = self._scale_to_cell(member.image)
+        for enemy in self.enemies:
+            self.scaled_images[enemy] = self._scale_to_cell(enemy.image)
         
-        # Генерация случайной сетки пола
         self.floor_grid = []
         for y in range(self.grid_height):
             row = []
@@ -45,104 +46,78 @@ class BattleScene(Scene):
                 floor_tile = pygame.transform.scale(TileRegistry.get_random_floor(), (self.cell_size, self.cell_size))
                 row.append(floor_tile)
             self.floor_grid.append(row)
+    
+    def _setup_positions(self):
+        for i, member in enumerate(self.party):
+            self.positions[member] = [2, 5 + i * 2]
+        for i, enemy in enumerate(self.enemies):
+            self.positions[enemy] = [12, 7]
         
     def _scale_to_cell(self, image):
-        """Масштабирует изображение под размер клетки сохраняя пропорции"""
         img_w, img_h = image.get_size()
         aspect_ratio = img_w / img_h
-        
         if aspect_ratio > 1:
             new_w = self.cell_size
             new_h = int(self.cell_size / aspect_ratio)
         else:
             new_h = self.cell_size
             new_w = int(self.cell_size * aspect_ratio)
-        
         return pygame.transform.smoothscale(image, (new_w, new_h))
         
     def on_enter(self):
-        self._roll_initiative()
+        self.message = f"Ход: {self.current_character.name}"
         
-    def _roll_initiative(self):
-        player_roll = random.randint(1, 20) + self.player.initiative_bonus
-        enemy_roll = random.randint(1, 20)
-        
-        self.message = f"Инициатива: Игрок {player_roll}, Враг {enemy_roll}"
-        
-        if player_roll >= enemy_roll:
-            self.state = "player_turn"
-            self.actions_left = self.max_actions
-        else:
-            self.state = "enemy_turn"
-            
     def _is_in_melee_range(self, pos1, pos2):
         return abs(pos1[0] - pos2[0]) <= 1 and abs(pos1[1] - pos2[1]) <= 1 and pos1 != pos2
         
     def handle_event(self, event):
         if event.type == pygame.KEYDOWN:
-            if self.state == "player_turn" and self.actions_left > 0:
+            if self.state == "party_turn" and self.actions_left > 0:
                 moved = False
-                if event.key == pygame.K_w and self.player_cell[1] > 0:
-                    self.player_cell[1] -= 1
+                char_pos = self.positions[self.current_character]
+                
+                if event.key == pygame.K_w and char_pos[1] > 0:
+                    char_pos[1] -= 1
                     moved = True
-                elif event.key == pygame.K_s and self.player_cell[1] < self.grid_height - 1:
-                    self.player_cell[1] += 1
+                elif event.key == pygame.K_s and char_pos[1] < self.grid_height - 1:
+                    char_pos[1] += 1
                     moved = True
-                elif event.key == pygame.K_a and self.player_cell[0] > 0:
-                    self.player_cell[0] -= 1
+                elif event.key == pygame.K_a and char_pos[0] > 0:
+                    char_pos[0] -= 1
                     moved = True
-                elif event.key == pygame.K_d and self.player_cell[0] < self.grid_width - 1:
-                    self.player_cell[0] += 1
+                elif event.key == pygame.K_d and char_pos[0] < self.grid_width - 1:
+                    char_pos[0] += 1
                     moved = True
                 elif event.key == pygame.K_1:
-                    # Атака руками
-                    if self._is_in_melee_range(self.player_cell, self.enemy_cell):
-                        self._player_attack(20)
-                    else:
-                        self.message = "Слишком далеко для ближней атаки!"
+                    self._try_attack(20, "melee", 0, 0, "Руки")
                 elif event.key == pygame.K_2:
-                    # Атака мечом
                     if self._has_item("Меч"):
-                        if self._is_in_melee_range(self.player_cell, self.enemy_cell):
-                            self._player_attack(50)
-                        else:
-                            self.message = "Слишком далеко для атаки мечом!"
+                        self._try_attack(75, "melee", 0, 0, "Меч")
                     else:
                         self.message = "У вас нет меча!"
                 elif event.key == pygame.K_3:
-                    # Атака арбалетом
                     if self._has_item("Арбалет") and self._has_item("Арбалетные болты"):
-                        distance = abs(self.player_cell[0] - self.enemy_cell[0]) + abs(self.player_cell[1] - self.enemy_cell[1])
-                        if distance <= 6:
-                            self._player_attack(50)
+                        if self._try_attack(50, "ranged", 6, 0, "Арбалет"):
                             self._use_item("Арбалетные болты", 1)
-                        else:
-                            self.message = "Слишком далеко для выстрела!"
                     else:
                         self.message = "Нужен арбалет и болты!"
                 elif event.key == pygame.K_4:
-                    # Атака свитком огненного шара
                     if self._has_item("Свиток огненного шара"):
-                        if self.player.mp >= 50:
-                            distance = abs(self.player_cell[0] - self.enemy_cell[0]) + abs(self.player_cell[1] - self.enemy_cell[1])
-                            if distance <= 4:
-                                self._player_attack(100)
-                                self.player.mp -= 50
+                        if self.current_character.mp >= 50:
+                            if self._try_attack(100, "ranged", 4, 50, "Огненный шар"):
                                 self._use_item("Свиток огненного шара", 1)
-                            else:
-                                self.message = "Слишком далеко для огненного шара!"
                         else:
                             self.message = "Недостаточно маны!"
                     else:
                         self.message = "У вас нет свитка!"
                 elif event.key == pygame.K_SPACE:
-                    self._end_turn()
+                    self._next_character()
                     
                 if moved:
                     self.actions_left -= 1
-                    self.message = f"Движение. Осталось действий: {self.actions_left}"
+                    self.message = f"{self.current_character.name}: Движение. Осталось: {self.actions_left}"
                     if self.actions_left == 0:
-                        self._end_turn()
+                        self._next_character()
                         
             elif self.state == "victory":
                 if event.key == pygame.K_ESCAPE:
@@ -153,129 +128,147 @@ class BattleScene(Scene):
                 elif event.key == pygame.K_ESCAPE:
                     self.game.running = False
     
+    def _try_attack(self, damage, attack_type, max_range, mp_cost, weapon_name):
+        char_pos = self.positions[self.current_character]
+        enemy = self.enemies[0]
+        enemy_pos = self.positions[enemy]
+        
+        if attack_type == "melee":
+            if not self._is_in_melee_range(char_pos, enemy_pos):
+                self.message = "Слишком далеко для ближней атаки!"
+                return False
+        else:
+            distance = abs(char_pos[0] - enemy_pos[0]) + abs(char_pos[1] - enemy_pos[1])
+            if distance > max_range:
+                self.message = f"Слишком далеко! (макс. {max_range} клеток)"
+                return False
+        
+        enemy.hp -= damage
+        if mp_cost > 0:
+            self.current_character.mp -= mp_cost
+        self.actions_left -= 1
+        self.message = f"{self.current_character.name} ({weapon_name}): {damage} урона! Осталось: {self.actions_left}"
+        
+        if enemy.hp <= 0:
+            self._victory()
+        elif self.actions_left == 0:
+            self._next_character()
+        
+        return True
+    
+    def _next_character(self):
+        self.current_character_index += 1
+        if self.current_character_index >= len(self.party):
+            self.state = "enemy_turn"
+            self.actions_left = 0
+        else:
+            self.current_character = self.party[self.current_character_index]
+            self.actions_left = self.max_actions
+            self.message = f"Ход: {self.current_character.name}"
+    
+    def _victory(self):
+        enemy = self.enemies[0]
+        self.message = f"{enemy.name} повержен!"
+        self.state = "victory"
+        
+        for item in enemy.loot:
+            count = enemy.monster_type.get("loot_counts", {}).get(item, 1)
+            self.game.party.inventory.add_item(item, count)
+        
+        loot_items = []
+        for item in enemy.loot:
+            count = enemy.monster_type.get("loot_counts", {}).get(item, 1)
+            loot_items.append(f"{item} ({count}шт)" if count > 1 else item)
+        self.loot_message = f"Получено: {', '.join(loot_items)}"
+        
+        for scene in self.game.scene_manager.scene_stack:
+            if hasattr(scene, 'dungeon'):
+                scene.dungeon.remove_entity(enemy)
+                break
+    
     def _has_item(self, item_name):
         return self.game.party.inventory.items.get(item_name, 0) > 0
     
     def _use_item(self, item_name, count):
         self.game.party.inventory.remove_item(item_name, count)
-                    
-    def _player_attack(self, damage):
-        self.enemy.hp -= damage
-        self.actions_left -= 1
-        self.message = f"Вы нанесли {damage} урона! Осталось действий: {self.actions_left}"
-        
-        if self.enemy.hp <= 0:
-            self.message = f"{self.enemy.name} повержен!"
-            self.state = "victory"
             
-            # Добавление лута в инвентарь
-            for item in self.enemy.loot:
-                count = self.enemy.monster_type.get("loot_counts", {}).get(item, 1)
-                self.game.party.inventory.add_item(item, count)
-            
-            # Сообщение о полученных предметах
-            loot_items = []
-            for item in self.enemy.loot:
-                count = self.enemy.monster_type.get("loot_counts", {}).get(item, 1)
-                if count > 1:
-                    loot_items.append(f"{item} ({count}шт)")
-                else:
-                    loot_items.append(item)
-            loot_msg = ", ".join(loot_items)
-            self.loot_message = f"Получено: {loot_msg}"
-            
-            for scene in self.game.scene_manager.scene_stack:
-                if hasattr(scene, 'dungeon'):
-                    scene.dungeon.remove_entity(self.enemy)
-                    break
-        elif self.actions_left == 0:
-            self._end_turn()
-            
-    def _end_turn(self):
-        self.state = "enemy_turn"
-        self.actions_left = 0
-        
     def _enemy_turn(self):
-        # AI монстра в зависимости от типа атаки
-        distance = abs(self.player_cell[0] - self.enemy_cell[0]) + abs(self.player_cell[1] - self.enemy_cell[1])
+        enemy = self.enemies[0]
+        enemy_pos = self.positions[enemy]
         
-        if self.enemy.attack_type == "melee":
-            # Ближний бой - приближаться и атаковать
-            if self._is_in_melee_range(self.player_cell, self.enemy_cell):
-                self._enemy_attack()
+        closest_target = min(self.party, key=lambda m: abs(self.positions[m][0] - enemy_pos[0]) + abs(self.positions[m][1] - enemy_pos[1]))
+        target_pos = self.positions[closest_target]
+        distance = abs(target_pos[0] - enemy_pos[0]) + abs(target_pos[1] - enemy_pos[1])
+        
+        if enemy.attack_type == "melee":
+            if self._is_in_melee_range(target_pos, enemy_pos):
+                self._enemy_attack(enemy, closest_target)
             else:
-                self._enemy_move_closer()
+                self._enemy_move_towards(enemy_pos, target_pos, enemy.name)
         else:
-            # Дальний бой
-            if self._is_in_melee_range(self.player_cell, self.enemy_cell):
-                # Слишком близко - отходить
-                self._enemy_move_away()
-            elif distance <= self.enemy.attack_range:
-                # В пределах дальности - атаковать
-                if self.enemy.mp >= self.enemy.mp_cost:
-                    self._enemy_attack()
-                else:
-                    # Нет маны - отходить
-                    self._enemy_move_away()
+            if self._is_in_melee_range(target_pos, enemy_pos):
+                self._enemy_move_away(enemy_pos, target_pos, enemy.name)
+            elif distance <= enemy.attack_range and enemy.mp >= enemy.mp_cost:
+                self._enemy_attack(enemy, closest_target)
+            elif distance <= enemy.attack_range:
+                self._enemy_move_away(enemy_pos, target_pos, enemy.name)
             else:
-                # Вне дальности - приближаться
-                self._enemy_move_closer()
+                self._enemy_move_towards(enemy_pos, target_pos, enemy.name)
     
-    def _enemy_attack(self):
-        damage = self.enemy.damage
-        self.player.hp -= damage
+    def _enemy_attack(self, enemy, target):
+        damage = enemy.damage
+        target.hp -= damage
         
-        if self.enemy.mp_cost > 0:
-            self.enemy.mp -= self.enemy.mp_cost
-            self.message = f"{self.enemy.name} нанес {damage} урона! (MP: {self.enemy.mp}/{self.enemy.max_mp})"
+        if enemy.mp_cost > 0:
+            enemy.mp -= enemy.mp_cost
+            self.message = f"{enemy.name} атакует {target.name}: {damage} урона!"
         else:
-            self.message = f"{self.enemy.name} нанес {damage} урона!"
+            self.message = f"{enemy.name} атакует {target.name}: {damage} урона!"
         
         if self.player.hp <= 0:
             self.message = "Вы погибли!"
             self.state = "defeat"
         else:
-            self.state = "player_turn"
+            self.current_character_index = 0
+            self.current_character = self.party[0]
             self.actions_left = self.max_actions
+            self.state = "party_turn"
     
-    def _enemy_move_closer(self):
-        dx = self.player_cell[0] - self.enemy_cell[0]
-        dy = self.player_cell[1] - self.enemy_cell[1]
+    def _enemy_move_towards(self, enemy_pos, target_pos, name):
+        dx = target_pos[0] - enemy_pos[0]
+        dy = target_pos[1] - enemy_pos[1]
         
         if abs(dx) > abs(dy):
-            if dx > 0:
-                self.enemy_cell[0] += 1
-            else:
-                self.enemy_cell[0] -= 1
+            enemy_pos[0] += 1 if dx > 0 else -1
         else:
-            if dy > 0:
-                self.enemy_cell[1] += 1
-            else:
-                self.enemy_cell[1] -= 1
-                
-        self.message = f"{self.enemy.name} подошел ближе"
-        self.state = "player_turn"
-        self.actions_left = self.max_actions
-    
-    def _enemy_move_away(self):
-        dx = self.player_cell[0] - self.enemy_cell[0]
-        dy = self.player_cell[1] - self.enemy_cell[1]
+            enemy_pos[1] += 1 if dy > 0 else -1
         
-        # Отходить в противоположную сторону
-        if abs(dx) > abs(dy):
-            if dx > 0 and self.enemy_cell[0] > 0:
-                self.enemy_cell[0] -= 1
-            elif dx < 0 and self.enemy_cell[0] < self.grid_width - 1:
-                self.enemy_cell[0] += 1
-        else:
-            if dy > 0 and self.enemy_cell[1] > 0:
-                self.enemy_cell[1] -= 1
-            elif dy < 0 and self.enemy_cell[1] < self.grid_height - 1:
-                self.enemy_cell[1] += 1
-                
-        self.message = f"{self.enemy.name} отошел"
-        self.state = "player_turn"
+        self.message = f"{name} подошел ближе"
+        self.current_character_index = 0
+        self.current_character = self.party[0]
         self.actions_left = self.max_actions
+        self.state = "party_turn"
+    
+    def _enemy_move_away(self, enemy_pos, target_pos, name):
+        dx = target_pos[0] - enemy_pos[0]
+        dy = target_pos[1] - enemy_pos[1]
+        
+        if abs(dx) > abs(dy):
+            if dx > 0 and enemy_pos[0] > 0:
+                enemy_pos[0] -= 1
+            elif dx < 0 and enemy_pos[0] < self.grid_width - 1:
+                enemy_pos[0] += 1
+        else:
+            if dy > 0 and enemy_pos[1] > 0:
+                enemy_pos[1] -= 1
+            elif dy < 0 and enemy_pos[1] < self.grid_height - 1:
+                enemy_pos[1] += 1
+        
+        self.message = f"{name} отошел"
+        self.current_character_index = 0
+        self.current_character = self.party[0]
+        self.actions_left = self.max_actions
+        self.state = "party_turn"
     
     def _restart_game(self):
         from scenes.main_menu_scene import MainMenuScene
@@ -292,98 +285,110 @@ class BattleScene(Scene):
     def render(self, screen):
         screen.fill((20, 20, 30))
         
-        # Отрисовка сетки клеток
         for y in range(self.grid_height):
             for x in range(self.grid_width):
                 px = self.start_x + x * self.cell_size
                 py = self.start_y + y * self.cell_size
                 screen.blit(self.floor_grid[y][x], (px, py))
         
-        # Отрисовка игрока
-        player_x = self.start_x + self.player_cell[0] * self.cell_size + self.cell_size // 2
-        player_y = self.start_y + self.player_cell[1] * self.cell_size + self.cell_size // 2
-        player_rect = self.player_image.get_rect(center=(player_x, player_y))
-        screen.blit(self.player_image, player_rect)
+        # Отрисовка всех членов партии
+        for member in self.party:
+            pos = self.positions[member]
+            mx = self.start_x + pos[0] * self.cell_size + self.cell_size // 2
+            my = self.start_y + pos[1] * self.cell_size + self.cell_size // 2
+            img = self.scaled_images[member]
+            rect = img.get_rect(center=(mx, my))
+            screen.blit(img, rect)
+            
+            # Подсветка активного персонажа
+            if member == self.current_character and self.state == "party_turn":
+                pygame.draw.rect(screen, (100, 255, 100), (self.start_x + pos[0] * self.cell_size, self.start_y + pos[1] * self.cell_size, self.cell_size, self.cell_size), 3)
         
-        # Отрисовка врага
-        enemy_x = self.start_x + self.enemy_cell[0] * self.cell_size + self.cell_size // 2
-        enemy_y = self.start_y + self.enemy_cell[1] * self.cell_size + self.cell_size // 2
-        enemy_rect = self.enemy_image.get_rect(center=(enemy_x, enemy_y))
-        screen.blit(self.enemy_image, enemy_rect)
+        # Отрисовка врагов
+        for enemy in self.enemies:
+            pos = self.positions[enemy]
+            ex = self.start_x + pos[0] * self.cell_size + self.cell_size // 2
+            ey = self.start_y + pos[1] * self.cell_size + self.cell_size // 2
+            img = self.scaled_images[enemy]
+            rect = img.get_rect(center=(ex, ey))
+            screen.blit(img, rect)
         
         # UI
         title = self.font.render("БОЙ", True, (255, 255, 255))
         screen.blit(title, (20, 20))
         
-        # Имя и HP врага
-        enemy_name = self.small_font.render(self.enemy.name, True, (255, 200, 100))
+        enemy = self.enemies[0]
+        enemy_name = self.small_font.render(enemy.name, True, (255, 200, 100))
         screen.blit(enemy_name, (20, 60))
         
-        enemy_hp_text = self.small_font.render(f"HP: {self.enemy.hp}/{self.enemy.max_hp}", True, (255, 255, 255))
+        enemy_hp_text = self.small_font.render(f"HP: {enemy.hp}/{enemy.max_hp}", True, (255, 255, 255))
         screen.blit(enemy_hp_text, (20, 85))
         
-        # Шкала здоровья врага
         hp_bar_width = 200
-        hp_ratio = self.enemy.hp / self.enemy.max_hp
+        hp_ratio = max(0, enemy.hp / enemy.max_hp)
         pygame.draw.rect(screen, (50, 50, 50), (20, 110, hp_bar_width, 15))
         pygame.draw.rect(screen, (200, 50, 50), (20, 110, int(hp_bar_width * hp_ratio), 15))
         pygame.draw.rect(screen, (255, 255, 255), (20, 110, hp_bar_width, 15), 1)
         
-        player_hp = self.small_font.render(f"Игрок HP: {self.player.hp}/{self.player.max_hp}", True, (255, 255, 255))
-        screen.blit(player_hp, (20, 135))
+        # Информация о текущем персонаже
+        y_offset = 140
+        char_name = self.small_font.render(f"Ход: {self.current_character.name}", True, (100, 255, 255))
+        screen.blit(char_name, (20, y_offset))
+        y_offset += 25
         
-        if self.state == "player_turn":
+        char_hp = self.small_font.render(f"HP: {self.current_character.hp}/{self.current_character.max_hp}", True, (255, 255, 255))
+        screen.blit(char_hp, (20, y_offset))
+        y_offset += 20
+        
+        char_mp = self.small_font.render(f"MP: {self.current_character.mp}/{self.current_character.max_mp}", True, (100, 200, 255))
+        screen.blit(char_mp, (20, y_offset))
+        y_offset += 20
+        
+        if self.state == "party_turn":
             actions_text = self.small_font.render(f"Действий: {self.actions_left}/{self.max_actions}", True, (100, 255, 100))
-            screen.blit(actions_text, (20, 160))
+            screen.blit(actions_text, (20, y_offset))
+            y_offset += 25
         
         msg = self.small_font.render(self.message, True, (255, 255, 100))
-        screen.blit(msg, (20, 185))
+        screen.blit(msg, (20, y_offset))
         
-        if self.state == "player_turn":
-            hint1 = self.small_font.render("WASD - движение (1 действие)", True, (200, 200, 200))
-            screen.blit(hint1, (20, screen.get_height() - 140))
+        if self.state == "party_turn":
+            hint_y = screen.get_height() - 140
+            hint1 = self.small_font.render("WASD - движение", True, (200, 200, 200))
+            screen.blit(hint1, (20, hint_y))
+            hint_y += 20
             
-            # Доступные атаки
-            y_offset = screen.get_height() - 115
-            hint2 = self.small_font.render("1 - Руки (20 урона, ближний)", True, (200, 200, 200))
-            screen.blit(hint2, (20, y_offset))
-            y_offset += 20
+            hint2 = self.small_font.render("1-Руки(20) 2-Меч(75)", True, (200, 200, 200))
+            screen.blit(hint2, (20, hint_y))
+            hint_y += 20
             
-            if self._has_item("Меч"):
-                hint3 = self.small_font.render("2 - Меч (75 урона, ближний)", True, (100, 255, 100))
-                screen.blit(hint3, (20, y_offset))
-                y_offset += 20
-            
-            if self._has_item("Арбалет") and self._has_item("Арбалетные болты"):
+            if self._has_item("Арбалет"):
                 bolts = self.game.party.inventory.items.get("Арбалетные болты", 0)
-                hint4 = self.small_font.render(f"3 - Арбалет (50 урона, 6 клеток, болтов: {bolts})", True, (100, 255, 100))
-                screen.blit(hint4, (20, y_offset))
-                y_offset += 20
+                hint3 = self.small_font.render(f"3-Арбалет(50,6кл,болты:{bolts})", True, (100, 255, 100))
+                screen.blit(hint3, (20, hint_y))
+                hint_y += 20
             
             if self._has_item("Свиток огненного шара"):
-                hint5 = self.small_font.render("4 - Огненный шар (100 урона, 4 клетки, 50 MP)", True, (100, 255, 100))
-                screen.blit(hint5, (20, y_offset))
-                y_offset += 20
+                hint4 = self.small_font.render("4-Огн.шар(100,4кл,50MP)", True, (100, 255, 100))
+                screen.blit(hint4, (20, hint_y))
+                hint_y += 20
             
-            hint_space = self.small_font.render("SPACE - Закончить ход", True, (200, 200, 200))
-            screen.blit(hint_space, (20, y_offset))
+            hint_space = self.small_font.render("SPACE - Пропустить ход", True, (200, 200, 200))
+            screen.blit(hint_space, (20, hint_y))
             
-            range_text = "В БЛИЖНЕМ БОЮ" if self._is_in_melee_range(self.player_cell, self.enemy_cell) else "ДАЛЕКО"
-            range_color = (100, 255, 100) if self._is_in_melee_range(self.player_cell, self.enemy_cell) else (255, 100, 100)
-            range_surf = self.small_font.render(range_text, True, range_color)
-            screen.blit(range_surf, (20, 210))
         elif self.state == "victory":
-            victory_text = self.font.render("Нажмите ESC для выхода", True, (100, 255, 100))
+            victory_text = self.font.render("ПОБЕДА!", True, (100, 255, 100))
             screen.blit(victory_text, (screen.get_width() // 2 - victory_text.get_width() // 2, screen.get_height() // 2))
             if self.loot_message:
                 loot_text = self.small_font.render(self.loot_message, True, (255, 255, 100))
                 screen.blit(loot_text, (screen.get_width() // 2 - loot_text.get_width() // 2, screen.get_height() // 2 + 40))
+            esc_text = self.small_font.render("ESC - Выход", True, (200, 200, 200))
+            screen.blit(esc_text, (screen.get_width() // 2 - esc_text.get_width() // 2, screen.get_height() // 2 + 80))
+            
         elif self.state == "defeat":
             defeat_title = self.font.render("ПОРАЖЕНИЕ", True, (255, 50, 50))
             screen.blit(defeat_title, (screen.get_width() // 2 - defeat_title.get_width() // 2, screen.get_height() // 2 - 50))
-            
             restart_text = self.small_font.render("R - Начать заново", True, (200, 200, 200))
             screen.blit(restart_text, (screen.get_width() // 2 - restart_text.get_width() // 2, screen.get_height() // 2 + 20))
-            
-            quit_text = self.small_font.render("ESC - Выйти из игры", True, (200, 200, 200))
+            quit_text = self.small_font.render("ESC - Выйти", True, (200, 200, 200))
             screen.blit(quit_text, (screen.get_width() // 2 - quit_text.get_width() // 2, screen.get_height() // 2 + 60))
